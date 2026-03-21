@@ -1,0 +1,8 @@
+# requirements.txt
+pyspark
+kafka-python
+opencv-python
+mediapipe
+ultralytics
+tkinter
+pygame
