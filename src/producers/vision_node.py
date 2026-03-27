@@ -15,7 +15,11 @@ import mediapipe as mp
 import numpy as np
 from kafka import KafkaProducer
 from ultralytics import YOLO
+from mediapipe.tasks import python as mp_python
+from mediapipe.tasks.python import vision as mp_vision
 from src.utils.kafka_config import PRODUCER_CONFIG, GAZE_EVENTS_TOPIC
+
+FACE_LANDMARKER_PATH = "calibration/face_landmarker.task"
 
 TOPIC = GAZE_EVENTS_TOPIC
 VIDEO_PATH = "data/sample_video.mp4"
@@ -25,7 +29,7 @@ SENSITIVE_LABELS = {"head"}
 TARGET_FPS = 24
 
 
-def gaze_loop(face_mesh, h_mat, gaze_lock, gaze_state):
+def gaze_loop(detector, h_mat, gaze_lock, gaze_state):
     cap = cv2.VideoCapture(0)
     w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     h_px = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
@@ -34,9 +38,10 @@ def gaze_loop(face_mesh, h_mat, gaze_lock, gaze_state):
         if not ret:
             continue
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        result = face_mesh.process(rgb)
-        if result.multi_face_landmarks:
-            lm = result.multi_face_landmarks[0].landmark
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
+        result = detector.detect(mp_image)
+        if result.face_landmarks:
+            lm = result.face_landmarks[0]
             ix = (lm[468].x + lm[473].x) / 2 * w
             iy = (lm[468].y + lm[473].y) / 2 * h_px
             if h_mat is not None:
@@ -52,10 +57,14 @@ def gaze_loop(face_mesh, h_mat, gaze_lock, gaze_state):
 def main():
     producer = KafkaProducer(**PRODUCER_CONFIG)
     model = YOLO(MODEL_PATH)
-    face_mesh = mp.solutions.face_mesh.FaceMesh(
-        refine_landmarks=True,
-        max_num_faces=1,
+
+    options = mp_vision.FaceLandmarkerOptions(
+        base_options=mp_python.BaseOptions(model_asset_path=FACE_LANDMARKER_PATH),
+        output_face_blendshapes=False,
+        output_facial_transformation_matrixes=False,
+        num_faces=1,
     )
+    detector = mp_vision.FaceLandmarker.create_from_options(options)
     h_mat = np.load(CALIB_PATH) if os.path.exists(CALIB_PATH) else None
 
     gaze_lock = threading.Lock()
@@ -63,7 +72,7 @@ def main():
 
     gaze_thread = threading.Thread(
         target=gaze_loop,
-        args=(face_mesh, h_mat, gaze_lock, gaze_state),
+        args=(detector, h_mat, gaze_lock, gaze_state),
         daemon=True,
     )
     gaze_thread.start()
