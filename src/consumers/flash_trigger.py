@@ -5,10 +5,17 @@ Uses tkinter (stdlib — no pip install needed).
 Run alongside the video player in a separate terminal.
 """
 
+import sys
 import threading
 import tkinter as tk
+from pathlib import Path
 
 from kafka import KafkaConsumer
+
+# Add repo root to path for imports
+REPO_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(REPO_ROOT))
+
 from src.utils.kafka_config import CONSUMER_CONFIG, TRIGGER_TOPIC, FLASH_DURATION_MS
 
 TOPIC = TRIGGER_TOPIC
@@ -17,19 +24,18 @@ root = tk.Tk()
 root.title("Flash Point")
 root.attributes("-fullscreen", True)
 root.attributes("-topmost", True)
-root.configure(bg="black")
-root.wm_attributes("-alpha", 0.0)  # start fully transparent
+root.configure(bg="white")
+root.withdraw()  # hide window completely at start
 
 
 def _do_flash():
     root.configure(bg="white")
-    root.wm_attributes("-alpha", 1.0)
+    root.deiconify()  # show window
     root.after(FLASH_DURATION_MS, _end_flash)
 
 
 def _end_flash():
-    root.wm_attributes("-alpha", 0.0)
-    root.configure(bg="black")
+    root.withdraw()  # hide window again after flash
 
 
 def fire_flash():
