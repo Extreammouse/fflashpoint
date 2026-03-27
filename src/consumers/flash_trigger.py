@@ -5,15 +5,13 @@ Uses tkinter (stdlib — no pip install needed).
 Run alongside the video player in a separate terminal.
 """
 
-import json
 import threading
 import tkinter as tk
 
 from kafka import KafkaConsumer
+from src.utils.kafka_config import CONSUMER_CONFIG, TRIGGER_TOPIC, FLASH_DURATION_MS
 
-KAFKA_BROKER = "localhost:9092"
-TOPIC = "intervention_trigger"
-FLASH_DURATION_MS = 200  # how long the flash stays white
+TOPIC = TRIGGER_TOPIC
 
 root = tk.Tk()
 root.title("Flash Point")
@@ -40,12 +38,7 @@ def fire_flash():
 
 
 def kafka_listener():
-    consumer = KafkaConsumer(
-        TOPIC,
-        bootstrap_servers=KAFKA_BROKER,
-        auto_offset_reset="latest",
-        value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-    )
+    consumer = KafkaConsumer(TOPIC, **CONSUMER_CONFIG)
     print(f"Flash trigger listening on {TOPIC}")
     for msg in consumer:
         v = msg.value

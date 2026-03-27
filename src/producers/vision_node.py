@@ -6,7 +6,6 @@ Real vision producer.
   - Publishes gaze + bbox events to gaze_events at ~24 Hz
 """
 
-import json
 import os
 import threading
 import time
@@ -16,9 +15,9 @@ import mediapipe as mp
 import numpy as np
 from kafka import KafkaProducer
 from ultralytics import YOLO
+from src.utils.kafka_config import PRODUCER_CONFIG, GAZE_EVENTS_TOPIC
 
-KAFKA_BROKER = "localhost:9092"
-TOPIC = "gaze_events"
+TOPIC = GAZE_EVENTS_TOPIC
 VIDEO_PATH = "data/sample_video.mp4"
 MODEL_PATH = "models/yolov8n.pt"
 CALIB_PATH = "calibration/homography.npy"
@@ -51,10 +50,7 @@ def gaze_loop(face_mesh, h_mat, gaze_lock, gaze_state):
 
 
 def main():
-    producer = KafkaProducer(
-        bootstrap_servers=KAFKA_BROKER,
-        value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-    )
+    producer = KafkaProducer(**PRODUCER_CONFIG)
     model = YOLO(MODEL_PATH)
     face_mesh = mp.solutions.face_mesh.FaceMesh(
         refine_landmarks=True,

@@ -24,7 +24,7 @@ This file gives concise, repo-specific guidance for AI coding agents working on 
 - Bring up local infra (Kafka, etc.): `docker-compose -f docker/docker-compose.yml up`.
 - Run a producer locally: `python src/producers/vision_node.py` (or `stub_producer.py` for simulated messages).
 - Run a consumer locally: `python src/consumers/flash_trigger.py`.
-- Run Spark analytics locally: inspect `src/processors/spark_analytics.py`; use `spark-submit` if required by your environment, otherwise `python` for small-scale runs.
+- Run Spark analytics locally: `spark-submit --py-files src/processors/gaze_udf.py --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1 src/processors/spark_analytics.py` (requires Kafka running and Java 17+).
 - Run unit tests: `pytest -q tests/test_udf.py` (project uses pytest for core UDF tests).
 
 ### Project-specific conventions & patterns
@@ -41,16 +41,32 @@ This file gives concise, repo-specific guidance for AI coding agents working on 
 - Backwards compatibility for message schemas — search for topic names in `src/utils/kafka_config.py` and message keys/serializers in `src/producers` and `src/consumers`.
 - Keep UDFs pure and small so `tests/test_udf.py` can exercise them without Kafka or Spark.
 
+### Spark & Kafka runtime setup (macOS Homebrew)
+- Install Java 17: `brew install --cask temurin@17`
+- Install Spark: `brew install apache-spark`
+- Set env vars (in terminal or `~/.zshrc`):
+  ```bash
+  export JAVA_HOME=$(/usr/libexec/java_home -v 17)
+  export SPARK_HOME=$(brew --prefix)/opt/apache-spark/libexec
+  export PATH="$JAVA_HOME/bin:$SPARK_HOME/bin:$PATH"
+  ```
+- Create Kafka topics (if not auto-created):
+  ```bash
+  docker exec docker-kafka-1 kafka-topics --create --topic gaze_events --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1
+  docker exec docker-kafka-1 kafka-topics --create --topic intervention_trigger --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1
+  ```
+- Kafka connector: for Spark 4.1.1 use `org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1` (Scala 2.13); UDF modules must be shipped via `--py-files` or zipped package.
+
 ### Examples (copyable)
 - Install deps: `pip install -r requirements.txt`
 - Up infra: `docker-compose -f docker/docker-compose.yml up`
 - Run producer: `python src/producers/vision_node.py`
 - Run consumer: `python src/consumers/flash_trigger.py`
+- Run Spark: `spark-submit --py-files src/processors/gaze_udf.py --packages org.apache.spark:spark-sql-kafka-0-10_2.13:4.1.1 src/processors/spark_analytics.py`
 - Run UDF tests: `pytest -q tests/test_udf.py`
 
 ### If unsure / missing details
 - Open `README.md` and `docker/docker-compose.yml` for service wiring and ports.
 - Inspect `src/utils/kafka_config.py` for topic names and broker addresses used across the repo.
 
----
-If you want, I can (1) merge this with any existing `.github/copilot-instructions.md` if present, (2) expand examples (exact spark-submit flags), or (3) run small repository scans to pull exact topic names and entrypoint docstrings into this file—which would require reading the files. Tell me which you'd prefer.
+

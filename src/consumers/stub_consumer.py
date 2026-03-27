@@ -3,19 +3,12 @@ Prints every message from intervention_trigger.
 Use this to confirm Spark is publishing violations correctly.
 """
 
-import json
-
 from kafka import KafkaConsumer
+from src.utils.kafka_config import CONSUMER_CONFIG, TRIGGER_TOPIC
 
-KAFKA_BROKER = "localhost:9092"
-TOPIC = "intervention_trigger"
+TOPIC = TRIGGER_TOPIC
 
-consumer = KafkaConsumer(
-    TOPIC,
-    bootstrap_servers=KAFKA_BROKER,
-    auto_offset_reset="latest",
-    value_deserializer=lambda v: json.loads(v.decode("utf-8")),
-)
+consumer = KafkaConsumer(TOPIC, **CONSUMER_CONFIG)
 
 if __name__ == "__main__":
     print(f"Listening on {TOPIC} — Ctrl+C to stop")

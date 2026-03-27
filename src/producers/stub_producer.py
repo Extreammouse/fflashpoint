@@ -4,19 +4,15 @@ Alternates between gaze ON the head bbox and gaze OFF it so you can
 visually confirm which events should trigger a violation.
 """
 
-import json
 import random
 import time
 
 from kafka import KafkaProducer
+from src.utils.kafka_config import PRODUCER_CONFIG, GAZE_EVENTS_TOPIC
 
-KAFKA_BROKER = "localhost:9092"
-TOPIC = "gaze_events"
+TOPIC = GAZE_EVENTS_TOPIC
 
-producer = KafkaProducer(
-    bootstrap_servers=KAFKA_BROKER,
-    value_serializer=lambda v: json.dumps(v).encode("utf-8"),
-)
+producer = KafkaProducer(**PRODUCER_CONFIG)
 
 HEAD_BBOX = [300, 100, 500, 300]  # x1, y1, x2, y2
 
