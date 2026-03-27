@@ -8,7 +8,7 @@ import random
 import time
 
 from kafka import KafkaProducer
-from src.utils.kafka_config import PRODUCER_CONFIG, GAZE_EVENTS_TOPIC
+from src.utils.kafka_config import PRODUCER_CONFIG, GAZE_EVENTS_TOPIC, KAFKA_BROKER
 
 TOPIC = GAZE_EVENTS_TOPIC
 
