@@ -6,7 +6,7 @@ No PySpark import — safe to unit test without Spark installed.
 SENSITIVE_LABELS = {"head"}
 CONFIDENCE_THRESHOLD = 0.5
  
- 
+
 
 def _is_gaze_in_sensitive_bbox(gaze_x, gaze_y, detected_objects):
     """
@@ -17,6 +17,7 @@ def _is_gaze_in_sensitive_bbox(gaze_x, gaze_y, detected_objects):
     bbox format: [x1, y1, x2, y2]  (top-left → bottom-right, pixel coords)
     """
     if detected_objects is None:
+        
         return False
 
     for obj in detected_objects:
