@@ -536,4 +536,9 @@ def format_alert_status(alert_state: dict[str, Any]) -> str:
         return f"armed flash:{flash.get('mode')}:{flash.get('status')}"
     return "armed"
 if __name__ == "__main__":
+    import multiprocessing
+    try:
+        multiprocessing.set_start_method("spawn")
+    except RuntimeError:
+        pass
     main()
